@@ -1,0 +1,2082 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Suivi des prélèvements — District sanitaire de Gourcy</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+      :root {
+        --prim: #0f5257;
+        --mid: #117a7f;
+        --soft: #dff1f0;
+        --soft2: #bbdedc;
+        --amb: #b15a00;
+        --ambl: #fdf0de;
+        --acc: #a81d24;
+        --accl: #faeaea;
+        --txt: #1f2937;
+        --mut: #5a6470;
+        --line: #dde9e8;
+        --bg: #f7fafa;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Segoe UI", Roboto, Arial, sans-serif;
+        color: var(--txt);
+        background: var(--bg);
+        font-size: 15px;
+      }
+
+      header {
+        background: var(--prim);
+        color: #fff;
+        padding: 14px 18px;
+      }
+
+      header h1 {
+        margin: 0;
+        font-size: 19px;
+        font-weight: 600;
+      }
+
+      header p {
+        margin: 3px 0 0;
+        font-size: 13px;
+        opacity: 0.85;
+      }
+
+      nav {
+        display: flex;
+        gap: 2px;
+        background: var(--mid);
+        padding: 0 12px;
+      }
+
+      nav button {
+        background: none;
+        border: none;
+        color: #dff1f0;
+        padding: 11px 18px;
+        font-size: 15px;
+        cursor: pointer;
+        border-bottom: 3px solid transparent;
+      }
+
+      nav button.on {
+        background: var(--bg);
+        color: var(--prim);
+        font-weight: 600;
+        border-bottom-color: var(--amb);
+      }
+
+      main {
+        padding: 16px;
+        max-width: 1250px;
+        margin: 0 auto;
+      }
+
+      .panel {
+        display: none;
+      }
+
+      .panel.on {
+        display: block;
+      }
+
+      .card {
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 14px;
+        margin-bottom: 14px;
+      }
+
+      label {
+        display: block;
+        font-size: 13px;
+        color: var(--mut);
+        margin-bottom: 4px;
+      }
+
+      input,
+      select,
+      textarea {
+        font: inherit;
+        padding: 8px 10px;
+        border: 1px solid #c7d4d3;
+        border-radius: 6px;
+        width: 100%;
+        background: #fff;
+      }
+
+      input:focus,
+      select:focus {
+        outline: 2px solid var(--mid);
+        outline-offset: -1px;
+      }
+
+      .row {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+
+      .row > div {
+        flex: 1;
+        min-width: 150px;
+      }
+
+      button.act {
+        background: var(--prim);
+        color: #fff;
+        border: none;
+        padding: 10px 18px;
+        border-radius: 6px;
+        font-size: 15px;
+        cursor: pointer;
+      }
+
+      button.act:hover {
+        background: var(--mid);
+      }
+
+      button.act.wa{background:#128C7E}
+      button.act.wa:hover{background:#25D366}
+      button.ghost {
+        background: #fff;
+        color: var(--prim);
+        border: 1px solid var(--prim);
+      }
+
+      button.warn {
+        background: var(--amb);
+      }
+
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        background: #fff;
+      }
+
+      th,
+      td {
+        border: 1px solid var(--line);
+        padding: 7px 8px;
+        text-align: center;
+        font-size: 14px;
+      }
+
+      th {
+        background: var(--prim);
+        color: #fff;
+        font-weight: 600;
+        position: sticky;
+        top: 0;
+        z-index: 5;
+      }
+
+      td.lbl,
+      th.lbl {
+        text-align: left;
+      }
+
+      td input {
+        width: 78px;
+        text-align: center;
+        padding: 6px;
+      }
+
+      .ro {
+        background: #f1f5f5;
+        color: var(--mut);
+        font-weight: 600;
+      }
+
+      .att {
+        font-weight: 700;
+      }
+
+      .att.pos {
+        color: var(--amb);
+      }
+
+      .att.zero {
+        color: var(--mid);
+      }
+
+      .manuel {
+        background: #fff7e6;
+        border-color: var(--amb) !important;
+      }
+
+      .badge {
+        display: inline-block;
+        font-size: 11px;
+        padding: 1px 6px;
+        border-radius: 9px;
+        background: var(--ambl);
+        color: var(--amb);
+        margin-left: 4px;
+      }
+
+      .badge.red {
+        background: var(--accl);
+        color: var(--acc);
+      }
+
+      tr.lockrow {
+        background: #f3f5f6;
+        color: var(--mut);
+      }
+
+      tr.lockrow input {
+        background: #e9ecee;
+        color: #9aa3ac;
+        cursor: not-allowed;
+      }
+
+      .theo {
+        font-size: 11px;
+        color: var(--mut);
+        margin-top: 3px;
+      }
+
+      .kpis {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(178px, 1fr));
+        gap: 12px;
+        margin-bottom: 14px;
+      }
+
+      .kpi {
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 13px;
+      }
+
+      .kpi .v {
+        font-size: 29px;
+        font-weight: 700;
+        color: var(--prim);
+        line-height: 1.1;
+      }
+
+      .kpi .l {
+        font-size: 13px;
+        color: var(--mut);
+        margin-top: 5px;
+      }
+
+      .kpi.al .v {
+        color: var(--acc);
+      }
+
+      .kpi.wa .v {
+        color: var(--amb);
+      }
+
+      .kpi.ok .v {
+        color: var(--mid);
+      }
+
+      .note {
+        background: var(--soft);
+        border: 1px solid var(--soft2);
+        border-radius: 6px;
+        padding: 10px 12px;
+        font-size: 14px;
+        color: var(--prim);
+        margin-bottom: 12px;
+      }
+
+      .alert {
+        background: var(--accl);
+        border-color: #f0d5d6;
+        color: var(--acc);
+      }
+
+      .warnbox {
+        background: var(--ambl);
+        border-color: #f0ddbe;
+        color: var(--amb);
+      }
+
+      .sr {
+        position: relative;
+      }
+
+      .drop {
+        position: absolute;
+        z-index: 20;
+        left: 0;
+        right: 0;
+        top: 100%;
+        background: #fff;
+        border: 1px solid #c7d4d3;
+        border-radius: 0 0 6px 6px;
+        max-height: 230px;
+        overflow: auto;
+        box-shadow: 0 6px 14px rgba(0, 0, 0, 0.1);
+      }
+
+      .drop div {
+        padding: 8px 10px;
+        cursor: pointer;
+        font-size: 14px;
+      }
+
+      .drop div:hover,
+      .drop div.sel {
+        background: var(--soft);
+      }
+
+      .dot {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--mid);
+        margin-right: 6px;
+      }
+
+      .bar {
+        height: 15px;
+        background: var(--mid);
+        border-radius: 3px;
+      }
+
+      .bar.a {
+        background: var(--amb);
+      }
+
+      h2 {
+        font-size: 17px;
+        color: var(--prim);
+        margin: 18px 0 8px;
+      }
+
+      .tw {
+        overflow: auto;
+        max-height: 62vh;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+
+      .foot {
+        font-size: 12px;
+        color: var(--mut);
+        margin-top: 18px;
+        text-align: center;
+      }
+
+      /* ---- bascule de vue ---- */
+      .viewsw{display:flex;gap:6px;margin-bottom:12px}
+      .viewsw button{flex:1;padding:11px;border:1px solid var(--line);background:#fff;color:var(--mut);
+        border-radius:8px;font-size:15px;cursor:pointer}
+      .viewsw button.on{background:var(--prim);color:#fff;border-color:var(--prim);font-weight:600}
+
+      /* ---- vue guidée ---- */
+      #guide{display:none}
+      .selmal{width:100%;padding:14px 12px;font-size:17px;border:2px solid var(--mid);
+        border-radius:8px;background:#fff;font-weight:600;color:var(--prim);appearance:none;
+        background-image:url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpath fill='%230F5257' d='M8 11L3 6h10z'/%3E%3C/svg%3E");
+        background-repeat:no-repeat;background-position:right 14px center;padding-right:38px}
+      .navmal{display:flex;gap:8px;margin-top:8px}
+      .navmal button{flex:1;padding:10px;border:1px solid var(--line);background:#fff;
+        border-radius:8px;font-size:15px;color:var(--prim);cursor:pointer}
+      .navmal button:disabled{opacity:.35;cursor:default}
+      .fld{margin-bottom:14px}
+      .fld label{font-size:14px;color:var(--mut);margin-bottom:6px;display:block}
+      .stepper{display:flex;align-items:stretch;gap:0}
+      .stepper button{width:52px;font-size:24px;line-height:1;border:1px solid #C7D4D3;background:#F4F8F8;
+        color:var(--prim);cursor:pointer;touch-action:manipulation}
+      .stepper button:first-child{border-radius:8px 0 0 8px}
+      .stepper button:last-child{border-radius:0 8px 8px 0}
+      .stepper input{flex:1;text-align:center;font-size:19px;font-weight:600;border-radius:0;
+        border-left:none;border-right:none;min-height:50px}
+      .bigro{display:flex;align-items:center;justify-content:space-between;background:#F1F5F5;
+        border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin-bottom:14px}
+      .bigro .k{font-size:14px;color:var(--mut)}
+      .bigro .v{font-size:22px;font-weight:700;color:var(--prim)}
+      .attbox{background:var(--soft);border:1px solid var(--soft2)}
+      .attbox .v{color:var(--mid)}
+      .attbox.pos{background:var(--ambl);border-color:#F0DDBE}
+      .attbox.pos .v{color:var(--amb)}
+      .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+      .chip{border:1px solid var(--line);background:#fff;border-radius:16px;padding:6px 11px;
+        font-size:13px;cursor:pointer;color:var(--txt)}
+      .chip.done{background:var(--soft);border-color:var(--soft2);color:var(--prim);font-weight:600}
+      .chip.wait{background:var(--ambl);border-color:#F0DDBE;color:var(--amb);font-weight:600}
+      .chip.lock{background:#F3F5F6;color:#9AA3AC;cursor:not-allowed}
+      .chip.cur{outline:2px solid var(--mid);outline-offset:1px}
+      .prog{height:6px;background:#E6EDEC;border-radius:3px;overflow:hidden;margin:10px 0 4px}
+      .prog i{display:block;height:100%;background:var(--mid)}
+      .sticky{position:sticky;bottom:0;background:var(--bg);padding:10px 0 4px;
+        border-top:1px solid var(--line);margin-top:10px;z-index:8}
+
+      @media (max-width: 700px) {
+        body{font-size:16px}
+        main{padding:10px}
+        header h1{font-size:17px}
+        nav button{flex:1;padding:12px 6px;font-size:15px}
+        nav{display:flex}
+        .row>div{min-width:100%}
+        input,select,textarea{font-size:16px;min-height:46px}
+        td input{width:100%;min-width:62px;font-size:16px;min-height:44px}
+        th,td{padding:6px 4px;font-size:14px}
+        button.act{width:100%;padding:14px;font-size:16px}
+        .kpis{grid-template-columns:repeat(2,1fr)}
+        .kpi .v{font-size:24px}
+      }
+      @media (max-width: 420px){
+        .kpis{grid-template-columns:1fr}
+      }
+    </style>
+  </head>
+
+  <body>
+    <header>
+      <h1>Suivi des prélèvements — surveillance épidémiologique</h1>
+      <p>
+        District sanitaire de Gourcy · report automatique des reliquats d'une
+        semaine à l'autre
+      </p>
+    </header>
+    <nav>
+      <button id="tb1" class="on" onclick="tab(1)">Saisie</button>
+      <button id="tb2" onclick="tab(2)">Tableau de bord</button>
+      <button id="tb3" onclick="tab(3)">Données</button>
+    </nav>
+
+    <main>
+      <!-- ================= SAISIE ================= -->
+      <section id="p1" class="panel on">
+        <div class="card">
+          <div class="row">
+            <div>
+              <label>Semaine épidémiologique</label
+              ><input
+                id="sem"
+                type="number"
+                min="1"
+                max="53"
+                value="36"
+                onchange="loadForm()"
+              />
+            </div>
+            <div>
+              <label>Année</label
+              ><input
+                id="an"
+                type="number"
+                min="2025"
+                max="2035"
+                value="2026"
+                onchange="loadForm()"
+              />
+            </div>
+            <div style="flex: 2">
+              <label>Formation sanitaire (tapez pour rechercher)</label>
+              <div class="sr">
+                <input
+                  id="fs"
+                  autocomplete="off"
+                  placeholder="ex. kontigue, guessere, urbain…"
+                />
+                <div id="dp" class="drop" style="display: none"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="banlabo" class="note" style="display: none"></div>
+        <div id="rep" class="note" style="display: none"></div>
+        <div id="ctl" style="display: none"></div>
+
+        <div class="viewsw">
+          <button id="vg" onclick="setView('guide')">Saisie guidée</button>
+          <button id="vt" onclick="setView('table')">Vue tableau</button>
+        </div>
+
+        <!-- ---------- VUE GUIDÉE ---------- -->
+        <div id="guide">
+          <div class="card">
+            <label for="selmal">Maladie à saisir</label>
+            <select id="selmal" class="selmal" onchange="goTo(this.value)"></select>
+            <div class="navmal">
+              <button id="btnprev" onclick="step(-1)">‹ Précédente</button>
+              <button id="btnnext" onclick="step(1)">Suivante ›</button>
+            </div>
+            <div class="prog"><i id="progbar" style="width:0%"></i></div>
+            <div id="progtxt" style="font-size:13px;color:var(--mut)"></div>
+          </div>
+
+          <div class="card" id="cardsaisie">
+            <div class="bigro">
+              <span class="k" id="k_rep">Reporté de la semaine précédente</span>
+              <span class="v" id="g_rep">0</span>
+            </div>
+
+            <div class="fld">
+              <label id="l_pre">Prélevés cette semaine</label>
+              <div class="stepper">
+                <button type="button" onclick="bump('pre',-1)">−</button>
+                <input id="g_pre" type="number" inputmode="numeric" min="0" value="0"
+                       oninput="setVal('pre',this.value)" onfocus="this.select()">
+                <button type="button" onclick="bump('pre',1)">+</button>
+              </div>
+              <div id="g_theo" class="theo"></div>
+            </div>
+
+            <div class="bigro">
+              <span class="k" id="k_tot">Total à envoyer</span>
+              <span class="v" id="g_tot">0</span>
+            </div>
+
+            <div class="fld">
+              <label id="l_env">Envoyés</label>
+              <div class="stepper">
+                <button type="button" onclick="bump('env',-1)">−</button>
+                <input id="g_env" type="number" inputmode="numeric" min="0" value="0"
+                       oninput="setVal('env',this.value)" onfocus="this.select()">
+                <button type="button" onclick="bump('env',1)">+</button>
+              </div>
+            </div>
+
+            <div class="bigro attbox" id="g_attbox">
+              <span class="k">En attente</span>
+              <span class="v" id="g_att">0</span>
+            </div>
+            <div class="fld">
+              <label>Corriger le nombre en attente si nécessaire</label>
+              <div class="stepper">
+                <button type="button" onclick="bump('att',-1)">−</button>
+                <input id="g_attin" type="number" inputmode="numeric" min="0" value="0"
+                       oninput="setVal('att',this.value)" onfocus="this.select()">
+                <button type="button" onclick="bump('att',1)">+</button>
+              </div>
+              <div id="g_manuel" class="theo"></div>
+            </div>
+            <div id="g_lock" class="note warnbox" style="display:none">
+              Cette maladie ne s'applique pas dans le district : la saisie est verrouillée.
+            </div>
+          </div>
+
+          <div class="card">
+            <label style="margin-bottom:6px">Avancement — appuyez sur une maladie pour y aller</label>
+            <div id="chips" class="chips"></div>
+          </div>
+        </div>
+
+        <!-- ---------- VUE TABLEAU ---------- -->
+        <div class="tw" id="tablewrap">
+          <table id="tbl">
+            <thead>
+              <tr>
+                <th class="lbl">Maladie</th>
+                <th>
+                  Reporté<br /><span style="font-weight: 400; font-size: 11px"
+                    >semaine préc.</span
+                  >
+                </th>
+                <th id="h_pre">
+                  Prélevés<br /><span style="font-weight: 400; font-size: 11px"
+                    >nouveaux</span
+                  >
+                </th>
+                <th id="h_tot">Total à envoyer</th>
+                <th id="h_env">Envoyés</th>
+                <th>En attente</th>
+              </tr>
+            </thead>
+            <tbody id="tb"></tbody>
+            <tfoot>
+              <tr class="ro">
+                <td class="lbl"><b>TOTAL</b></td>
+                <td id="t_rep">0</td>
+                <td id="t_pre">0</td>
+                <td id="t_tot">0</td>
+                <td id="t_env">0</td>
+                <td id="t_att">0</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+
+        <div class="card" style="margin-top: 14px">
+          <label>Observations (facultatif)</label>
+          <textarea
+            id="obs"
+            rows="2"
+            placeholder="Rupture de tubes, véhicule indisponible, etc."
+          ></textarea>
+          <div
+            style="margin-top: 12px; display: flex; gap: 10px; flex-wrap: wrap"
+          >
+            <button class="act" onclick="save()">Enregistrer la semaine</button>
+            <button class="act ghost" onclick="recalcAll()">
+              Recalculer les « en attente »
+            </button>
+            <button class="act wa" onclick="shareWeek(true)">
+        Envoyer par WhatsApp
+      </button>
+      <button class="act ghost" onclick="clearForm()">
+              Vider le formulaire
+            </button>
+          </div>
+          <div id="msg" style="margin-top: 10px"></div>
+        </div>
+      </section>
+
+      <!-- ================= TABLEAU DE BORD ================= -->
+      <section id="p2" class="panel">
+        <div class="card">
+          <div class="row">
+            <div>
+              <label>Semaine analysée</label
+              ><input
+                id="dsem"
+                type="number"
+                min="1"
+                max="53"
+                value="36"
+                onchange="dash()"
+              />
+            </div>
+            <div>
+              <label>Année</label
+              ><input id="dan" type="number" value="2026" onchange="dash()" />
+            </div>
+            <div style="align-self: flex-end">
+              <button class="act" onclick="dash()">Actualiser</button>
+            </div>
+          </div>
+        </div>
+        <div id="dashout"></div>
+      </section>
+
+      <!-- ================= DONNÉES ================= -->
+      <section id="p3" class="panel">
+        <div class="card">
+          <p style="margin-top: 0">
+            Les données sont conservées dans ce navigateur. Exporter
+            régulièrement pour les transmettre au district.
+          </p>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap">
+            <button class="act wa" onclick="shareWeek()">
+              Envoyer la semaine par WhatsApp
+            </button>
+            <button class="act" onclick="expWeek()">
+              Exporter la semaine affichée
+            </button>
+            <button class="act" onclick="expAll()">
+              Exporter tout l'historique
+            </button>
+            <button
+              class="act ghost"
+              onclick="document.getElementById('imp').click()"
+            >
+              Importer une sauvegarde
+            </button>
+            <input
+              id="imp"
+              type="file"
+              accept=".json"
+              style="display: none"
+              onchange="importJSON(this)"
+            />
+            <button class="act warn" onclick="wipe()">
+              Effacer toutes les données
+            </button>
+          </div>
+        </div>
+        <div id="listout"></div>
+      </section>
+
+      <p class="foot">
+        Sources et hypothèses : liste des 44 formations sanitaires et liste des
+        maladies sous surveillance issues du canevas TLOH du district sanitaire
+        de Gourcy.<br />
+        Les listes se modifient en tête du script (constantes FS et MAL).
+      </p>
+    </main>
+
+    <script>
+      /* ============ RÉFÉRENTIELS — modifier ici si besoin ============ */
+      const FS = [
+        "CMA Gourcy",
+        "Centre Médical communautaire",
+        "CSPS Bangassé",
+        "CSPS Bascorma",
+        "CSPS Bassi",
+        "CSPS Bougounam",
+        "CSPS Boussou",
+        "CSPS Guesséré",
+        "CSPS Guiri Guiri",
+        "CSPS Kasba Samo",
+        "CSPS Keneko",
+        "CSPS Kera Douré",
+        "CSPS Kibilo",
+        "CSPS Kindibo",
+        "CSPS Kirikodogo",
+        "CSPS Kontigué",
+        "CSPS Koundouba",
+        "CSPS Lago",
+        "CSPS Leba",
+        "CSPS Mako",
+        "CSPS Masbore",
+        "CSPS Minima Doure",
+        "CSPS Moundian",
+        "CSPS Niessega",
+        "CSPS Pallé",
+        "CSPS Pella",
+        "CSPS Posso",
+        "CSPS Ranaoua",
+        "CSPS Ridimbo",
+        "CSPS Rikiba",
+        "CSPS Roba",
+        "CSPS Rondolga",
+        "CSPS Sanh",
+        "CSPS Saye",
+        "CSPS Tamounouma",
+        "CSPS Tangaye",
+        "CSPS Tangloghin Baoghin",
+        "CSPS Taslima",
+        "CSPS Toubyengo",
+        "CSPS Tougo",
+        "CSPS Tougouya Koko",
+        "CSPS Urbain Gourcy",
+        "CSPS Zindinguessé",
+        "CSPS Zondoma",
+        "Laboratoire du CMA",
+      ];
+
+      const MAL = [
+        {
+          n: "Méningite",
+          p: "LCR",
+          lock: false,
+        },
+        {
+          n: "Arboviroses (dengue, Zika, Chikungunya)",
+          p: "Sérum",
+          lock: false,
+        },
+        {
+          n: "Ictères fébriles (fièvre jaune, hépatite E)",
+          p: "Sérum",
+          lock: false,
+        },
+        {
+          n: "Paralysies flasques aiguës (PFA)",
+          p: "Selles",
+          lock: false,
+        },
+        {
+          n: "Choléra",
+          p: "Selles",
+          lock: false,
+        },
+        {
+          n: "Tuberculose",
+          p: "Crachats",
+          lock: false,
+        },
+        {
+          n: "Charge virale plasmatique du VIH",
+          p: "Plasma",
+          lock: false,
+        },
+        {
+          n: "Détection précoce du VIH",
+          p: "DBS",
+          lock: false,
+        },
+        {
+          n: "Rougeole",
+          p: "Sérum",
+          lock: false,
+        },
+        {
+          n: "Rotavirus",
+          p: "Selles",
+          lock: false,
+        },
+        {
+          n: "Grippes (IRAS / SG)",
+          p: "Écouvillon",
+          lock: false,
+        },
+        {
+          n: "Eaux usées",
+          p: "Environnement",
+          lock: true,
+        },
+        {
+          n: "Isolats pour la RAM",
+          p: "Souches",
+          lock: true,
+        },
+        {
+          n: "Contrôle qualité VIH",
+          p: "Panel",
+          lock: false,
+        },
+        {
+          n: "Autre (diarrhée sanguinolente, etc.)",
+          p: "Variable",
+          lock: false,
+        },
+      ];
+      // lock:true  → ligne verrouillée, non applicable dans le district.
+      // Passer à false pour réactiver une maladie, ou l'inverse.
+
+      const LABO = "Laboratoire du CMA"; // service receveur, ne réalise pas de prélèvement
+
+      const SEUIL_ANC = 2; // semaines au-delà desquelles un reliquat est signalé
+
+      /* ============ STOCKAGE ============ */
+      const KEY = "suivi_tdr_gourcy_v1";
+      let DB = {};
+
+      function load() {
+        try {
+          DB = JSON.parse(localStorage.getItem(KEY)) || {};
+        } catch (e) {
+          DB = {};
+        }
+      }
+
+      function persist() {
+        try {
+          localStorage.setItem(KEY, JSON.stringify(DB));
+        } catch (e) {
+          alert("Stockage impossible : " + e.message);
+        }
+      }
+      const wk = (a, s) => a + "-S" + String(s).padStart(2, "0");
+
+      /* ============ LOGIQUE MÉTIER ============ */
+      // Reliquat de la semaine précédente pour une FS et une maladie
+      function reporte(an, sem, fs, mal) {
+        let pa =
+          sem > 1
+            ? {
+                a: an,
+                s: sem - 1,
+              }
+            : {
+                a: an - 1,
+                s: 53,
+              };
+        let rec = (DB[wk(pa.a, pa.s)] || {})[fs];
+        if (!rec && sem <= 1) {
+          pa = {
+            a: an - 1,
+            s: 52,
+          };
+          rec = (DB[wk(pa.a, pa.s)] || {})[fs];
+        }
+        if (!rec) return 0;
+        const l = (rec.lignes || []).find((x) => x.mal === mal);
+        return l ? +l.att || 0 : 0;
+      }
+      // Ancienneté : depuis combien de semaines un reliquat existe sans interruption
+      function anciennete(an, sem, fs, mal) {
+        let n = 0,
+          a = an,
+          s = sem;
+        for (let i = 0; i < 12; i++) {
+          s--;
+          if (s < 1) {
+            s = 52;
+            a--;
+          }
+          const rec = (DB[wk(a, s)] || {})[fs];
+          if (!rec) break;
+          const l = (rec.lignes || []).find((x) => x.mal === mal);
+          if (l && (+l.att || 0) > 0) n++;
+          else break;
+        }
+        return n;
+      }
+      // Logique 2 : en attente = reporté + prélevés − envoyés
+      const calcAtt = (rep, pre, env) =>
+        Math.max(0, (+rep || 0) + (+pre || 0) - (+env || 0));
+
+      /* ============ INTERFACE SAISIE ============ */
+      let fsSel = "",
+        curIdx = -1;
+      const norm = (s) =>
+        s
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .toLowerCase();
+
+      // Détection du service de laboratoire, insensible aux accents, à la casse
+      // et aux variantes d'écriture (« Laboratoire du CMA », « laboratoire CMA Gourcy »…).
+      const LABO_CLE = norm(LABO).replace(/\b(du|de|des|la|le|les)\b/g, "").replace(/[^a-z0-9]/g, "");
+      function isLabo(f) {
+        if (!f) return false;
+        if (f === LABO) return true;
+        const k = norm(f).replace(/\b(du|de|des|la|le|les)\b/g, "").replace(/[^a-z0-9]/g, "");
+        if (k === LABO_CLE) return true;
+        // « Laboratoire … CMA », « Labo CMA Gourcy », « LaboCMA »…
+        return (k.indexOf("laboratoire") === 0 || k.indexOf("labo") === 0) && k.indexOf("cma") > -1;
+      }
+
+      // Vérifie au démarrage que la constante LABO désigne bien une entrée de la liste FS.
+      function verifierLabo() {
+        const trouve = FS.filter((f) => isLabo(f));
+        const bann = document.getElementById("banlabo");
+        if (trouve.length === 1) { bann.style.display = "none"; return; }
+        bann.style.display = "block";
+        bann.className = "note alert";
+        bann.innerHTML = trouve.length === 0
+          ? "⚠ <b>Configuration à corriger.</b> Aucune formation de la liste ne correspond à la constante LABO (« " +
+            LABO + " »). Le mode laboratoire et le rapprochement sont désactivés. " +
+            "Vérifiez l'orthographe dans la liste FS ou dans la constante LABO, en tête du script."
+          : "⚠ <b>Configuration à corriger.</b> Plusieurs entrées de la liste sont reconnues comme laboratoire : " +
+            trouve.join(" · ") + ". N'en conserver qu'une seule.";
+      }
+
+      /* ============ ÉTAT CENTRAL DE LA SAISIE ============ */
+      // Source unique de vérité : les deux vues lisent et écrivent ici.
+      let STATE = [];
+      let CUR = 0;            // index de la maladie affichée en vue guidée
+      let VIEW = "guide";     // "guide" ou "table"
+
+      function blankState() {
+        return MAL.map(() => ({ rep: 0, pre: 0, env: 0, att: 0, manuel: false, theo: null }));
+      }
+
+      // total des prélèvements déclarés envoyés par les formations (hors laboratoire)
+      function envoyesParFS(an, sem, mal) {
+        const w = DB[wk(an, sem)] || {};
+        let t = 0;
+        Object.keys(w).forEach((f) => {
+          if (isLabo(f)) return;
+          const l = (w[f].lignes || []).find((x) => x.mal === mal);
+          if (l) t += +l.env || 0;
+        });
+        return t;
+      }
+
+      const laboMode = () => isLabo(fsSel);
+
+      /* ---- écriture dans l'état ---- */
+      function setVal(field, v) {
+        const s = STATE[CUR];
+        if (!s || MAL[CUR].lock) return;
+        const n = Math.max(0, Math.floor(+v || 0));
+        if (field === "att") { s.att = n; s.manuel = true; }
+        else { s[field] = n; if (!s.manuel) s.att = calcAtt(s.rep, s.pre, s.env); }
+        renderAll();
+      }
+      function setValAt(i, field, v) {
+        const s = STATE[i];
+        if (!s || MAL[i].lock) return;
+        const n = Math.max(0, Math.floor(+v || 0));
+        if (field === "att") { s.att = n; s.manuel = true; }
+        else { s[field] = n; if (!s.manuel) s.att = calcAtt(s.rep, s.pre, s.env); }
+        renderAll();
+      }
+      function bump(field, d) {
+        const s = STATE[CUR];
+        if (!s || MAL[CUR].lock) return;
+        setVal(field, (s[field] || 0) + d);
+      }
+      function recalcAll() {
+        STATE.forEach((s) => { s.manuel = false; s.att = calcAtt(s.rep, s.pre, s.env); });
+        renderAll();
+        flash("Les « en attente » ont été recalculés à partir de la formule.", "note");
+      }
+
+      /* ---- navigation entre maladies ---- */
+      function goTo(i) { CUR = Math.max(0, Math.min(MAL.length - 1, +i || 0)); renderGuide(); }
+      function step(d) {
+        let i = CUR + d;
+        while (i >= 0 && i < MAL.length && MAL[i].lock) i += d;   // sauter les verrouillées
+        if (i >= 0 && i < MAL.length) goTo(i);
+      }
+
+      /* ---- bascule de vue ---- */
+      function setView(v) {
+        VIEW = v;
+        document.getElementById("guide").style.display = v === "guide" ? "block" : "none";
+        document.getElementById("tablewrap").style.display = v === "table" ? "block" : "none";
+        document.getElementById("vg").classList.toggle("on", v === "guide");
+        document.getElementById("vt").classList.toggle("on", v === "table");
+        try { localStorage.setItem("vue_saisie", v); } catch (e) {}
+        renderAll();
+      }
+
+      /* ============ RENDU — VUE TABLEAU ============ */
+      function buildRows() {
+        const tb = document.getElementById("tb");
+        tb.innerHTML = "";
+        MAL.forEach((m, i) => {
+          const tr = document.createElement("tr");
+          if (m.lock) tr.className = "lockrow";
+          const d = m.lock ? " disabled" : "";
+          tr.innerHTML =
+            '<td class="lbl"><b>' + m.n + "</b><br>" +
+              '<span style="font-size:11px;color:var(--mut)">' + m.p +
+              (m.lock ? ' · <span class="badge red">non applicable</span>' : "") + "</span></td>" +
+            '<td class="ro" id="rep' + i + '">0</td>' +
+            '<td><input id="pre' + i + '" type="number" inputmode="numeric" min="0" value="0"' +
+              ' oninput="setValAt(' + i + ',\'pre\',this.value)" onfocus="this.select()"' + d + ">" +
+              '<div id="th' + i + '" class="theo"></div></td>' +
+            '<td class="ro" id="tot' + i + '">0</td>' +
+            '<td><input id="env' + i + '" type="number" inputmode="numeric" min="0" value="0"' +
+              ' oninput="setValAt(' + i + ',\'env\',this.value)" onfocus="this.select()"' + d + "></td>" +
+            '<td><input id="att' + i + '" class="att" type="number" inputmode="numeric" min="0" value="0"' +
+              ' oninput="setValAt(' + i + ',\'att\',this.value)" onfocus="this.select()"' + d + "></td>";
+          tb.appendChild(tr);
+        });
+      }
+
+      function renderTable() {
+        STATE.forEach((s, i) => {
+          const rep = document.getElementById("rep" + i);
+          if (!rep) return;
+          rep.textContent = s.rep;
+          document.getElementById("pre" + i).value = s.pre;
+          document.getElementById("env" + i).value = s.env;
+          document.getElementById("tot" + i).textContent = s.rep + s.pre;
+          const a = document.getElementById("att" + i);
+          a.value = s.att;
+          a.classList.toggle("manuel", !!s.manuel);
+          a.classList.toggle("pos", s.att > 0);
+          a.classList.toggle("zero", s.att === 0);
+          const th = document.getElementById("th" + i);
+          if (s.theo !== null) {
+            const ec = s.pre - s.theo;
+            th.innerHTML = "théorique : <b>" + s.theo + "</b>" +
+              (ec !== 0 ? ' <span class="badge red">écart ' + (ec > 0 ? "+" : "") + ec + "</span>" : "");
+          } else th.innerHTML = "";
+        });
+      }
+
+      /* ============ RENDU — VUE GUIDÉE ============ */
+      function fillSelect() {
+        const sel = document.getElementById("selmal");
+        sel.innerHTML = MAL.map((m, i) =>
+          '<option value="' + i + '"' + (m.lock ? " disabled" : "") + ">" +
+          (i + 1) + ". " + m.n + (m.lock ? "  (non applicable)" : "") + "</option>"
+        ).join("");
+      }
+
+      function renderGuide() {
+        const m = MAL[CUR], s = STATE[CUR];
+        if (!m || !s) return;
+        const labo = laboMode();
+        document.getElementById("selmal").value = CUR;
+
+        document.getElementById("k_rep").textContent =
+          labo ? "Reporté de la semaine précédente" : "Reporté de la semaine précédente";
+        document.getElementById("l_pre").textContent =
+          labo ? "Reçus des formations (à confirmer)" : "Prélevés cette semaine — " + m.p;
+        document.getElementById("k_tot").textContent = labo ? "Total à traiter" : "Total à envoyer";
+        document.getElementById("l_env").textContent =
+          labo ? "Envoyés au niveau supérieur" : "Envoyés cette semaine";
+
+        document.getElementById("g_rep").textContent = s.rep;
+        document.getElementById("g_pre").value = s.pre;
+        document.getElementById("g_tot").textContent = s.rep + s.pre;
+        document.getElementById("g_env").value = s.env;
+        document.getElementById("g_att").textContent = s.att;
+        document.getElementById("g_attin").value = s.att;
+        document.getElementById("g_attbox").classList.toggle("pos", s.att > 0);
+        document.getElementById("g_manuel").innerHTML = s.manuel
+          ? '<span class="badge">valeur corrigée à la main</span>' : "";
+
+        const th = document.getElementById("g_theo");
+        if (s.theo !== null) {
+          const ec = s.pre - s.theo;
+          th.innerHTML = "théorique d'après les formations : <b>" + s.theo + "</b>" +
+            (ec !== 0 ? ' <span class="badge red">écart ' + (ec > 0 ? "+" : "") + ec + "</span>" : "");
+        } else th.innerHTML = "";
+
+        // verrouillage
+        const lk = m.lock;
+        ["g_pre", "g_env", "g_attin"].forEach((id) => { document.getElementById(id).disabled = lk; });
+        document.querySelectorAll(".stepper button").forEach((b) => { b.disabled = lk; });
+        document.getElementById("g_lock").style.display = lk ? "block" : "none";
+        document.getElementById("cardsaisie").style.opacity = lk ? ".6" : "1";
+
+        // navigation
+        let hasPrev = false, hasNext = false;
+        for (let i = CUR - 1; i >= 0; i--) if (!MAL[i].lock) { hasPrev = true; break; }
+        for (let i = CUR + 1; i < MAL.length; i++) if (!MAL[i].lock) { hasNext = true; break; }
+        document.getElementById("btnprev").disabled = !hasPrev;
+        document.getElementById("btnnext").disabled = !hasNext;
+
+        // avancement
+        const actives = MAL.map((x, i) => i).filter((i) => !MAL[i].lock);
+        const remplies = actives.filter((i) => STATE[i].pre > 0 || STATE[i].env > 0 || STATE[i].att > 0).length;
+        const p = actives.length ? Math.round((remplies / actives.length) * 100) : 0;
+        document.getElementById("progbar").style.width = p + "%";
+        document.getElementById("progtxt").textContent =
+          remplies + " maladie(s) renseignée(s) sur " + actives.length + " applicables";
+
+        // pastilles
+        document.getElementById("chips").innerHTML = MAL.map((x, i) => {
+          const st = STATE[i];
+          let c = "chip";
+          if (x.lock) c += " lock";
+          else if (st.att > 0) c += " wait";
+          else if (st.pre > 0 || st.env > 0) c += " done";
+          if (i === CUR) c += " cur";
+          const suffix = x.lock ? "" : (st.att > 0 ? " · " + st.att + " en attente"
+                        : (st.pre > 0 ? " · " + st.pre : ""));
+          return '<span class="' + c + '" onclick="' + (x.lock ? "" : "goTo(" + i + ")") + '">' +
+                 x.n + suffix + "</span>";
+        }).join("");
+      }
+
+      /* ============ RENDU GLOBAL ============ */
+      function totaux() {
+        let r = 0, p = 0, t = 0, e = 0, a = 0;
+        STATE.forEach((s) => { r += s.rep; p += s.pre; t += s.rep + s.pre; e += s.env; a += s.att; });
+        t_rep.textContent = r; t_pre.textContent = p; t_tot.textContent = t;
+        t_env.textContent = e; t_att.textContent = a;
+      }
+
+      function controles() {
+        const box = document.getElementById("ctl");
+        let out = "";
+        MAL.forEach((m, i) => {
+          if (m.lock) return;
+          const s = STATE[i];
+          if (s.env > s.rep + s.pre)
+            out += "<div>⚠ <b>" + m.n + "</b> : " + s.env + " envoyés alors que seuls " +
+                   (s.rep + s.pre) + " sont disponibles.</div>";
+        });
+        if (out) { box.innerHTML = '<div class="note alert">' + out + "</div>"; box.style.display = "block"; }
+        else box.style.display = "none";
+      }
+
+      function renderAll() {
+        if (VIEW === "table") renderTable(); else renderGuide();
+        totaux();
+        controles();
+      }
+
+      /* ============ CHARGEMENT D'UNE SEMAINE ============ */
+      function loadForm() {
+        if (!fsSel) return;
+        const an = +document.getElementById("an").value,
+              sem = +document.getElementById("sem").value;
+        const labo = isLabo(fsSel);
+
+        document.getElementById("h_pre").innerHTML = labo
+          ? 'Reçus des formations<br><span style="font-weight:400;font-size:11px">à confirmer</span>'
+          : 'Prélevés<br><span style="font-weight:400;font-size:11px">nouveaux</span>';
+        document.getElementById("h_tot").textContent = labo ? "Total à traiter" : "Total à envoyer";
+        document.getElementById("h_env").innerHTML = labo ? "Envoyés au niveau supérieur" : "Envoyés";
+
+        const rec = (DB[wk(an, sem)] || {})[fsSel];
+        STATE = blankState();
+        let repTot = 0, vieux = [];
+
+        MAL.forEach((m, i) => {
+          const s = STATE[i];
+          s.rep = reporte(an, sem, fsSel, m.n);
+          repTot += s.rep;
+          const anc = anciennete(an, sem, fsSel, m.n);
+          if (s.rep > 0 && anc >= SEUIL_ANC) vieux.push(m.n + " (" + s.rep + ", " + anc + " sem.)");
+          const l = rec ? (rec.lignes || []).find((x) => x.mal === m.n) : null;
+          s.theo = labo && !m.lock ? envoyesParFS(an, sem, m.n) : null;
+          s.pre = l ? +l.pre || 0 : (s.theo !== null ? s.theo : 0);
+          s.env = l ? +l.env || 0 : 0;
+          s.manuel = !!(l && l.manuel);
+          s.att = l ? +l.att || 0 : calcAtt(s.rep, s.pre, s.env);
+        });
+
+        document.getElementById("obs").value = rec ? rec.obs || "" : "";
+        CUR = MAL.findIndex((m) => !m.lock);
+        if (CUR < 0) CUR = 0;
+
+        const r = document.getElementById("rep");
+        let txt = "";
+        if (labo)
+          txt = "<b>Service de laboratoire.</b> Il ne réalise pas de prélèvement : il reçoit ceux des formations " +
+                "sanitaires et les achemine au niveau supérieur. Le champ « Reçus des formations » est pré-rempli " +
+                "avec le total déclaré envoyé par les CSPS cette semaine — <b>valeur à confirmer</b>.";
+        if (repTot > 0)
+          txt += (txt ? "<br><br>" : "") + "<b>" + repTot +
+            " prélèvement(s) restaient en attente la semaine précédente.</b> " +
+            (labo ? "Ils sont reportés et s'ajoutent aux réceptions de la semaine."
+                  : "Indiquez dans « Envoyés » ce qui est parti cette semaine ; le reste demeure en attente.") +
+            (vieux.length ? "<br><br>⚠ Reliquats anciens : " + vieux.join(" · ") : "");
+        if (txt) { r.className = vieux.length || labo ? "note warnbox" : "note"; r.innerHTML = txt; r.style.display = "block"; }
+        else r.style.display = "none";
+
+        renderAll();
+        flash(rec ? "Semaine déjà enregistrée pour cette formation — vous pouvez la corriger." : "", rec ? "note" : "");
+      }
+
+      function save() {
+        if (!fsSel) { flash("Sélectionner d'abord une formation sanitaire.", "alert"); return; }
+        const an = +document.getElementById("an").value,
+              sem = +document.getElementById("sem").value;
+        if (!(sem >= 1 && sem <= 53)) { flash("Semaine invalide.", "alert"); return; }
+        const k = wk(an, sem);
+        DB[k] = DB[k] || {};
+        DB[k][fsSel] = {
+          maj: new Date().toISOString(),
+          obs: document.getElementById("obs").value,
+          lignes: MAL.map((m, i) => ({
+            mal: m.n, rep: STATE[i].rep, pre: STATE[i].pre,
+            env: STATE[i].env, att: STATE[i].att, manuel: !!STATE[i].manuel,
+          })),
+        };
+        persist();
+        flash("Enregistré : " + fsSel + " — semaine " + sem + "/" + an + ".", "note");
+        fsSel = "";
+        document.getElementById("fs").value = "";
+        clearForm();
+        document.getElementById("fs").focus();
+      }
+
+      function clearForm() {
+        STATE = blankState();
+        CUR = MAL.findIndex((m) => !m.lock); if (CUR < 0) CUR = 0;
+        document.getElementById("obs").value = "";
+        document.getElementById("rep").style.display = "none";
+        renderAll();
+      }
+
+      function flash(t, c) {
+        const m = document.getElementById("msg");
+        if (!t) {
+          m.innerHTML = "";
+          return;
+        }
+        m.innerHTML =
+          '<div class="note ' +
+          (c === "alert" ? "alert" : "") +
+          '">' +
+          t +
+          "</div>";
+      }
+
+      /* ---- recherche formation ---- */
+      const inFs = document.getElementById("fs"),
+        dp = document.getElementById("dp");
+
+      function saisies(an, sem) {
+        return Object.keys(DB[wk(an, sem)] || {});
+      }
+
+      function showDrop() {
+        const q = norm(inFs.value),
+          an = +document.getElementById("an").value,
+          sem = +document.getElementById("sem").value;
+        const done = saisies(an, sem);
+        const list = FS.filter((f) => norm(f).includes(q)).slice(0, 60);
+        dp.innerHTML = list.length
+          ? list
+              .map(
+                (f, i) =>
+                  '<div data-v="' +
+                  f.replace(/"/g, "&quot;") +
+                  '" class="' +
+                  (i === curIdx ? "sel" : "") +
+                  '">' +
+                  (done.includes(f) ? '<span class="dot"></span>' : "") +
+                  f +
+                  (done.includes(f)
+                    ? ' <span class="badge">saisi</span>'
+                    : "") +
+                  "</div>",
+              )
+              .join("")
+          : '<div style="color:var(--mut)">Aucune formation trouvée</div>';
+        dp.style.display = "block";
+        [...dp.children].forEach((d) => (d.onclick = () => pick(d.dataset.v)));
+      }
+
+      function pick(v) {
+        if (!v) return;
+        fsSel = v;
+        inFs.value = v;
+        dp.style.display = "none";
+        curIdx = -1;
+        loadForm();
+      }
+      inFs.addEventListener("input", () => {
+        curIdx = -1;
+        showDrop();
+      });
+      inFs.addEventListener("focus", showDrop);
+      inFs.addEventListener("keydown", (e) => {
+        const n = dp.children.length;
+        if (e.key === "ArrowDown") {
+          curIdx = Math.min(curIdx + 1, n - 1);
+          showDrop();
+          e.preventDefault();
+        } else if (e.key === "ArrowUp") {
+          curIdx = Math.max(curIdx - 1, 0);
+          showDrop();
+          e.preventDefault();
+        } else if (e.key === "Enter") {
+          if (curIdx >= 0 && dp.children[curIdx])
+            pick(dp.children[curIdx].dataset.v);
+          e.preventDefault();
+        } else if (e.key === "Escape") {
+          dp.style.display = "none";
+        }
+      });
+      document.addEventListener("click", (e) => {
+        if (!e.target.closest(".sr")) dp.style.display = "none";
+      });
+
+      /* ============ TABLEAU DE BORD ============ */
+      function agg(an, sem) {
+        const w = DB[wk(an, sem)] || {};
+        const fsl = Object.keys(w);
+        let rep = 0,
+          pre = 0,
+          env = 0,
+          att = 0;
+        const parMal = {},
+          parFs = {};
+        MAL.forEach(
+          (m) =>
+            (parMal[m.n] = {
+              rep: 0,
+              pre: 0,
+              env: 0,
+              att: 0,
+              anc: 0,
+            }),
+        );
+        const labo = fsl.find((f) => isLabo(f)) || null;
+        const fsOnly = fsl.filter((f) => !isLabo(f));
+        fsl.forEach((f) => {
+          let a = 0,
+            p = 0,
+            e = 0,
+            r = 0;
+          (w[f].lignes || []).forEach((l) => {
+            rep += +l.rep;
+            pre += +l.pre;
+            env += +l.env;
+            att += +l.att;
+            r += +l.rep;
+            p += +l.pre;
+            e += +l.env;
+            a += +l.att;
+            const M = parMal[l.mal];
+            if (M) {
+              M.rep += +l.rep;
+              M.pre += +l.pre;
+              M.env += +l.env;
+              M.att += +l.att;
+              if (+l.att > 0) {
+                const x = anciennete(an, sem, f, l.mal) + 1;
+                if (x > M.anc) M.anc = x;
+              }
+            }
+          });
+          parFs[f] = {
+            rep: r,
+            pre: p,
+            env: e,
+            att: a,
+          };
+        });
+        return {
+          fsl,
+          fsOnly,
+          labo,
+          rep,
+          pre,
+          env,
+          att,
+          parMal,
+          parFs,
+          dispo: rep + pre,
+        };
+      }
+
+      function pct(x, y) {
+        return y > 0 ? (x / y) * 100 : null;
+      }
+
+      function fmt(v) {
+        return v === null ? "—" : v.toFixed(1) + " %";
+      }
+
+      // Rapprochement cumulé sur n semaines.
+      // Le transport prend du temps : un tube envoyé en fin de semaine est souvent
+      // réceptionné la semaine suivante. On évalue donc deux hypothèses —
+      // réception la même semaine (décalage 0) ou la semaine suivante (décalage 1) —
+      // et on retient celle qui rend les déclarations cohérentes.
+      function envoisFS(an, sem) {
+        const w = DB[wk(an, sem)] || {};
+        // une semaine sans aucune saisie ne compte pas : elle fausserait le dénominateur
+        if (!Object.keys(w).some((f) => !isLabo(f))) return null;
+        let t = 0;
+        MAL.forEach((m) => { if (!m.lock) t += envoyesParFS(an, sem, m.n); });
+        return t;
+      }
+      function receptionsLabo(an, sem) {
+        const w = DB[wk(an, sem)] || {};
+        const lf = Object.keys(w).find((f) => isLabo(f));
+        if (!lf) return null;                       // le laboratoire n'a pas saisi
+        let t = 0;
+        (w[lf].lignes || []).forEach((l) => {
+          const m = MAL.find((x) => x.n === l.mal);
+          if (!m || !m.lock) t += +l.pre || 0;
+        });
+        return t;
+      }
+      // somme sur n semaines en remontant depuis (an, sem), avec un décalage de d semaines
+      function sommeSur(an, sem, n, d, fn) {
+        let a = an, s = sem, t = 0, vues = 0;
+        for (let i = 0; i < d; i++) { s--; if (s < 1) { s = 52; a--; } }
+        for (let i = 0; i < n; i++) {
+          const v = fn(a, s);
+          if (v !== null) { t += v; vues++; }
+          s--; if (s < 1) { s = 52; a--; }
+        }
+        return { total: t, semaines: vues };
+      }
+      function cumulRappro(an, sem, n) {
+        const rec = sommeSur(an, sem, n, 0, receptionsLabo);
+        if (rec.semaines === 0) return { labo: false, taux: null, env: 0, rec: 0, decalage: null, n: n };
+        const e0 = sommeSur(an, sem, n, 0, envoisFS);   // réception la même semaine
+        const e1 = sommeSur(an, sem, n, 1, envoisFS);   // réception la semaine suivante
+        const t0 = e0.total > 0 ? (rec.total / e0.total) * 100 : null;
+        // l'hypothèse décalée n'est retenue que si elle repose sur autant de semaines
+        // renseignées que l'hypothèse directe : sinon son dénominateur est tronqué
+        const t1 =
+          e1.total > 0 && e1.semaines === e0.semaines
+            ? (rec.total / e1.total) * 100
+            : null;
+        let taux = t0, env = e0.total, dec = 0;
+        if (t1 !== null && (t0 === null || Math.abs(t1 - 100) < Math.abs(t0 - 100))) {
+          taux = t1; env = e1.total; dec = 1;
+        }
+        return { labo: true, taux: taux, env: env, rec: rec.total, decalage: dec, n: n };
+      }
+
+      function dash() {
+        const an = +document.getElementById("dan").value,
+          sem = +document.getElementById("dsem").value;
+        const A = agg(an, sem);
+        const out = document.getElementById("dashout");
+        if (A.fsl.length === 0) {
+          out.innerHTML =
+            '<div class="note warnbox">Aucune donnée enregistrée pour la semaine ' +
+            sem +
+            "/" +
+            an +
+            ".</div>";
+          return;
+        }
+
+        const compl = pct(A.fsOnly.length, FS.length - 1);
+        const tauxEnv = pct(A.env, A.dispo);
+        const tauxAtt = pct(A.att, A.dispo);
+        const apur = pct(A.rep > 0 ? Math.min(A.rep, A.env) : 0, A.rep);
+        const fsAtt = Object.values(A.parFs).filter((x) => x.att > 0).length;
+        let ancMax = 0;
+        Object.values(A.parMal).forEach((m) => {
+          if (m.anc > ancMax) ancMax = m.anc;
+        });
+        const fsZero = A.fsOnly.filter((f) => A.parFs[f].pre === 0).length;
+
+        // rapprochement formations ↔ laboratoire — semaine seule
+        let envFS = 0,
+          recLab = 0;
+        MAL.forEach((m) => {
+          if (m.lock) return;
+          envFS += envoyesParFS(an, sem, m.n);
+        });
+        if (A.labo) {
+          (((DB[wk(an, sem)] || {})[A.labo] || {}).lignes || []).forEach(
+            (l) => {
+              recLab += +l.pre || 0;
+            },
+          );
+        }
+
+        // rapprochement cumulé sur 4 semaines — absorbe le décalage de transport
+        const CUM = cumulRappro(an, sem, 4);
+        const rappro = envFS > 0 ? pct(recLab, envFS) : null;
+
+        let h =
+          '<div class="kpis">' +
+          kpi(A.pre, "Prélèvements réalisés", "ok") +
+          kpi(A.rep, "Reliquats reportés", A.rep > 0 ? "wa" : "ok") +
+          kpi(A.env, "Prélèvements envoyés", "ok") +
+          kpi(A.att, "Restant en attente", A.att > 0 ? "wa" : "ok") +
+          kpi(
+            fmt(tauxEnv),
+            "Taux d'acheminement",
+            tauxEnv === null
+              ? ""
+              : tauxEnv >= 90
+                ? "ok"
+                : tauxEnv >= 70
+                  ? "wa"
+                  : "al",
+          ) +
+          kpi(
+            fmt(compl),
+            "Complétude de saisie",
+            compl >= 90 ? "ok" : compl >= 70 ? "wa" : "al",
+          ) +
+          kpi(
+            fmt(apur),
+            "Taux d'apurement des reliquats",
+            apur === null ? "" : apur >= 80 ? "ok" : "wa",
+          ) +
+          kpi(
+            ancMax + (ancMax > 1 ? " sem." : " sem."),
+            "Ancienneté maximale",
+            ancMax >= SEUIL_ANC ? "al" : "ok",
+          ) +
+          kpi(fsAtt, "Formations avec reliquat", fsAtt > 0 ? "wa" : "ok") +
+          kpi(fsZero, "Formations sans prélèvement", fsZero > 0 ? "wa" : "ok") +
+          kpi(
+            A.labo ? fmt(rappro) : "—",
+            "Rapprochement — semaine seule",
+            !A.labo
+              ? ""
+              : rappro === null
+                ? ""
+                : Math.abs(rappro - 100) <= 5
+                  ? "ok"
+                  : "al",
+          ) +
+          kpi(
+            CUM.labo ? fmt(CUM.taux) : "—",
+            "Rapprochement — cumul 4 semaines",
+            !CUM.labo
+              ? ""
+              : CUM.taux === null
+                ? ""
+                : Math.abs(CUM.taux - 100) <= 10
+                  ? "ok"
+                  : "al",
+          ) +
+          "</div>";
+
+        // lecture guidée
+        let lec = [];
+        let info = [];
+        if (tauxEnv !== null && tauxEnv < 70)
+          lec.push(
+            "Le taux d'acheminement est faible : moins de 7 prélèvements sur 10 disponibles ont été envoyés.",
+          );
+        if (ancMax >= SEUIL_ANC)
+          lec.push(
+            "Des prélèvements attendent depuis " +
+              ancMax +
+              " semaines : leur valeur diagnostique se dégrade.",
+          );
+        if (compl < 90)
+          lec.push(
+            "Seules " +
+              A.fsOnly.length +
+              " formations sur " +
+              (FS.length - 1) +
+              " ont transmis leurs données.",
+          );
+        // L'écart d'une semaine isolée s'explique souvent par le délai de transport.
+        // Seul un écart qui persiste sur le cumul de 4 semaines constitue une anomalie.
+        if (A.labo && rappro !== null && Math.abs(rappro - 100) > 5) {
+          const detail =
+            "les formations déclarent " + envFS + " prélèvements envoyés, le laboratoire en déclare " +
+            recLab + " reçus (écart " + (recLab - envFS > 0 ? "+" : "") + (recLab - envFS) + ")";
+          if (CUM.taux !== null && Math.abs(CUM.taux - 100) <= 10)
+            info.push(
+              "Écart de rapprochement sur la semaine : " + detail +
+              ". Sur les 4 dernières semaines le rapprochement s'établit à " + fmt(CUM.taux) +
+              " : l'écart s'explique vraisemblablement par le délai entre l'envoi et la réception.",
+            );
+          else
+            lec.push(
+              "Écart de rapprochement persistant : " + detail +
+              ". Le cumul sur 4 semaines reste à " + fmt(CUM.taux) +
+              ", ce qui écarte l'hypothèse d'un simple décalage de transport. Une des deux déclarations est à vérifier.",
+            );
+        }
+        if (!A.labo)
+          lec.push(
+            "Le service de laboratoire n'a pas saisi ses données cette semaine : le rapprochement est impossible.",
+          );
+        if (fsZero > 0)
+          lec.push(
+            fsZero +
+              " formation(s) déclarent zéro prélèvement : vérifier s'il s'agit d'une absence de cas ou d'un défaut de prélèvement.",
+          );
+        if (lec.length)
+          h +=
+            '<div class="note warnbox"><b>Points d\'attention</b><ul style="margin:6px 0 0 18px">' +
+            lec.map((x) => "<li>" + x + "</li>").join("") +
+            "</ul></div>";
+        if (info.length)
+          h +=
+            '<div class="note"><b>Pour information</b><ul style="margin:6px 0 0 18px">' +
+            info.map((x) => "<li>" + x + "</li>").join("") +
+            "</ul></div>";
+        if (!lec.length && !info.length)
+          h +=
+            '<div class="note"><b>Aucune alerte cette semaine.</b> Acheminement, complétude et ancienneté sont dans les normes.</div>';
+
+        // par maladie
+        h +=
+          '<h2>Situation par maladie</h2><div class="tw"><table><thead><tr><th class="lbl">Maladie</th><th>Reporté</th><th>Prélevés</th><th>Disponibles</th><th>Envoyés</th><th>En attente</th><th>Taux d\'acheminement</th><th>Ancienneté</th></tr></thead><tbody>';
+        MAL.forEach((m) => {
+          const x = A.parMal[m.n],
+            d = x.rep + x.pre,
+            t = pct(x.env, d);
+          h +=
+            '<tr><td class="lbl">' +
+            m.n +
+            "</td><td>" +
+            x.rep +
+            "</td><td>" +
+            x.pre +
+            '</td><td class="ro">' +
+            d +
+            "</td><td>" +
+            x.env +
+            "</td>" +
+            '<td class="att ' +
+            (x.att > 0 ? "pos" : "zero") +
+            '">' +
+            x.att +
+            "</td><td>" +
+            fmt(t) +
+            "</td>" +
+            "<td>" +
+            (x.att > 0
+              ? x.anc +
+                " sem." +
+                (x.anc >= SEUIL_ANC
+                  ? ' <span class="badge red">ancien</span>'
+                  : "")
+              : "—") +
+            "</td></tr>";
+        });
+        h += "</tbody></table></div>";
+
+        // par formation
+        const ordre = A.fsl
+          .slice()
+          .sort((a, b) => A.parFs[b].att - A.parFs[a].att);
+        h +=
+          '<h2>Situation par formation sanitaire</h2><div class="tw"><table><thead><tr><th class="lbl">Formation</th><th>Reporté</th><th>Prélevés</th><th>Envoyés</th><th>En attente</th><th>Taux d\'acheminement</th><th></th></tr></thead><tbody>';
+        ordre.forEach((f) => {
+          const x = A.parFs[f],
+            d = x.rep + x.pre,
+            t = pct(x.env, d);
+          const w = d > 0 ? Math.round((x.env / d) * 100) : 0;
+          h +=
+            '<tr><td class="lbl">' +
+            f +
+            "</td><td>" +
+            x.rep +
+            "</td><td>" +
+            x.pre +
+            "</td><td>" +
+            x.env +
+            "</td>" +
+            '<td class="att ' +
+            (x.att > 0 ? "pos" : "zero") +
+            '">' +
+            x.att +
+            "</td><td>" +
+            fmt(t) +
+            "</td>" +
+            '<td style="width:130px"><div class="bar' +
+            (w < 70 ? " a" : "") +
+            '" style="width:' +
+            Math.max(w, 2) +
+            '%"></div></td></tr>';
+        });
+        h += "</tbody></table></div>";
+
+        // rapprochement par maladie
+        if (A.labo) {
+          const lab = ((DB[wk(an, sem)] || {})[A.labo] || {}).lignes || [];
+          h +=
+            "<h2>Rapprochement formations sanitaires ↔ laboratoire</h2>" +
+            '<div class="note">Les prélèvements déclarés envoyés par les formations devraient correspondre à ceux reçus par le laboratoire du CMA. ' +
+            "Un écart sur une seule semaine provient souvent du délai entre l'envoi et la réception : c'est le cumul sur plusieurs semaines qui fait foi.</div>" +
+            '<div class="tw"><table><thead><tr><th class="lbl">Maladie</th><th>Envoyés par les FS</th><th>Reçus au laboratoire</th><th>Écart</th><th>Taux de rapprochement</th></tr></thead><tbody>';
+          MAL.forEach((m) => {
+            if (m.lock) return;
+            const e = envoyesParFS(an, sem, m.n);
+            const l = lab.find((x) => x.mal === m.n);
+            const r = l ? +l.pre || 0 : 0;
+            if (e === 0 && r === 0) return;
+            const ec = r - e,
+              t = pct(r, e);
+            h +=
+              '<tr><td class="lbl">' +
+              m.n +
+              "</td><td>" +
+              e +
+              "</td><td>" +
+              r +
+              "</td>" +
+              '<td class="att ' +
+              (ec === 0 ? "zero" : "pos") +
+              '">' +
+              (ec > 0 ? "+" : "") +
+              ec +
+              "</td><td>" +
+              fmt(t) +
+              "</td></tr>";
+          });
+          h +=
+            '<tr class="ro"><td class="lbl"><b>TOTAL</b></td><td>' +
+            envFS +
+            "</td><td>" +
+            recLab +
+            "</td><td>" +
+            (recLab - envFS > 0 ? "+" : "") +
+            (recLab - envFS) +
+            "</td><td>" +
+            fmt(rappro) +
+            "</td></tr>";
+          h +=
+            '<tr class="ro"><td class="lbl"><b>CUMUL ' + CUM.n +
+            " semaines</b>" +
+            (CUM.decalage === 1 ? '<br><span style="font-weight:400;font-size:11px">réception décalée d\'une semaine</span>' : "") +
+            "</td><td>" + CUM.env + "</td><td>" + CUM.rec + "</td><td>" +
+            (CUM.rec - CUM.env > 0 ? "+" : "") + (CUM.rec - CUM.env) + "</td><td>" +
+            fmt(CUM.taux) + "</td></tr>";
+          h += "</tbody></table></div>";
+        }
+
+        // évolution
+        h +=
+          '<h2>Évolution des 8 dernières semaines</h2><div class="tw"><table><thead><tr><th>Semaine</th><th>Prélevés</th><th>Envoyés</th><th>En attente</th><th>Taux d\'acheminement</th><th>Formations ayant saisi</th></tr></thead><tbody>';
+        let a2 = an,
+          s2 = sem,
+          lignes = [];
+        for (let i = 0; i < 8; i++) {
+          const B = agg(a2, s2);
+          if (B.fsl.length)
+            lignes.push({
+              s: "S" + String(s2).padStart(2, "0") + "/" + a2,
+              pre: B.pre,
+              env: B.env,
+              att: B.att,
+              t: pct(B.env, B.dispo),
+              n: B.fsl.length,
+            });
+          s2--;
+          if (s2 < 1) {
+            s2 = 52;
+            a2--;
+          }
+        }
+        lignes.reverse().forEach((l) => {
+          h +=
+            "<tr><td>" +
+            l.s +
+            "</td><td>" +
+            l.pre +
+            "</td><td>" +
+            l.env +
+            "</td><td>" +
+            l.att +
+            "</td><td>" +
+            fmt(l.t) +
+            "</td><td>" +
+            l.n +
+            "</td></tr>";
+        });
+        h += "</tbody></table></div>";
+
+        h +=
+          "<p class=\"foot\">Modes de calcul — Taux d'acheminement = envoyés ÷ (reporté + prélevés) · Taux d'apurement = part du reliquat de la semaine précédente effectivement envoyée · Complétude = formations ayant saisi ÷ " +
+          FS.length +
+          " · Ancienneté = nombre de semaines consécutives avec un reliquat non nul · Rapprochement = reçus déclarés par le laboratoire ÷ envoyés déclarés par les formations, sur la semaine puis en cumul sur 4 semaines pour absorber le délai de transport. Les maladies verrouillées sont exclues de tous les calculs.</p>";
+        out.innerHTML = h;
+      }
+
+      function kpi(v, l, c) {
+        return (
+          '<div class="kpi ' +
+          (c || "") +
+          '"><div class="v">' +
+          v +
+          '</div><div class="l">' +
+          l +
+          "</div></div>"
+        );
+      }
+
+      /* ============ DONNÉES / EXPORT ============ */
+      function rowsOf(an, sem) {
+        const w = DB[wk(an, sem)] || {};
+        const R = [];
+        Object.keys(w).forEach((f) => {
+          (w[f].lignes || []).forEach((l) => {
+            R.push({
+              Annee: an,
+              Semaine: sem,
+              Formation: f,
+              Maladie: l.mal,
+              Reporte: +l.rep,
+              Preleves: +l.pre,
+              Disponibles: +l.rep + +l.pre,
+              Envoyes: +l.env,
+              En_attente: +l.att,
+              Saisie_manuelle: l.manuel ? "oui" : "non",
+              Observations: w[f].obs || "",
+            });
+          });
+        });
+        return R;
+      }
+
+      /* ============ PARTAGE WHATSAPP ============ */
+      // Construit le classeur de la semaine et le partage via l'application WhatsApp.
+      // Utilise l'API de partage du navigateur (Android et iOS récents) ; à défaut,
+      // télécharge le fichier et ouvre WhatsApp avec le résumé à envoyer.
+      function classeurSemaine(an, sem) {
+        const R = rowsOf(an, sem);
+        if (!R.length) return null;
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(R), "S" + sem);
+        const out = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+        return {
+          blob: new Blob([out], {
+            type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          }),
+          nom: "Suivi_prelevements_S" + String(sem).padStart(2, "0") + "_" + an + ".xlsx",
+        };
+      }
+
+      function resumeSemaine(an, sem) {
+        const A = agg(an, sem);
+        const t = A.dispo > 0 ? ((A.env / A.dispo) * 100).toFixed(1) + " %" : "—";
+        let txt =
+          "*Suivi des prélèvements — District sanitaire de Gourcy*\n" +
+          "Semaine " + String(sem).padStart(2, "0") + " / " + an + "\n\n" +
+          "Formations ayant saisi : " + A.fsOnly.length + " / " + (FS.length - 1) + "\n" +
+          "Prélèvements réalisés : " + A.pre + "\n" +
+          "Reliquats reportés : " + A.rep + "\n" +
+          "Envoyés : " + A.env + "\n" +
+          "Restant en attente : " + A.att + "\n" +
+          "Taux d'acheminement : " + t;
+        const vieux = [];
+        MAL.forEach((m) => {
+          if (m.lock) return;
+          const x = A.parMal[m.n];
+          if (x && x.att > 0 && x.anc >= SEUIL_ANC)
+            vieux.push(m.n + " (" + x.att + ", " + x.anc + " sem.)");
+        });
+        if (vieux.length) txt += "\n\n⚠ Reliquats anciens : " + vieux.join(" · ");
+        return txt;
+      }
+
+      async function shareWeek(depuisSaisie) {
+        // depuis l'onglet Saisie, on prend la semaine du formulaire
+        const an = depuisSaisie
+          ? +document.getElementById("an").value
+          : +document.getElementById("dan").value;
+        const sem = depuisSaisie
+          ? +document.getElementById("sem").value
+          : +document.getElementById("dsem").value;
+
+        const f = classeurSemaine(an, sem);
+        if (!f) {
+          alert(
+            "Aucune donnée enregistrée pour la semaine " + sem + "/" + an +
+            ".\nEnregistrez d'abord la saisie."
+          );
+          return;
+        }
+        const txt = resumeSemaine(an, sem);
+
+        // 1) partage natif du fichier — Android et iOS récents
+        try {
+          const file = new File([f.blob], f.nom, { type: f.blob.type });
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({
+              files: [file],
+              title: "Suivi des prélèvements S" + sem + "/" + an,
+              text: txt,
+            });
+            return;
+          }
+        } catch (e) {
+          if (e && e.name === "AbortError") return; // l'utilisateur a annulé
+        }
+
+        // 2) repli : téléchargement du fichier puis ouverture de WhatsApp
+        const url = URL.createObjectURL(f.blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = f.nom;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 4000);
+
+        const suite =
+          txt + "\n\n(Le fichier " + f.nom + " vient d'être téléchargé : joignez-le à ce message.)";
+        window.open("https://wa.me/?text=" + encodeURIComponent(suite), "_blank");
+      }
+
+      function expWeek() {
+        const an = +document.getElementById("dan").value,
+          sem = +document.getElementById("dsem").value;
+        const R = rowsOf(an, sem);
+        if (!R.length) {
+          alert("Aucune donnée pour cette semaine.");
+          return;
+        }
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(
+          wb,
+          XLSX.utils.json_to_sheet(R),
+          "S" + sem,
+        );
+        XLSX.writeFile(
+          wb,
+          "Suivi_prelevements_S" +
+            String(sem).padStart(2, "0") +
+            "_" +
+            an +
+            ".xlsx",
+        );
+      }
+
+      function expAll() {
+        const ks = Object.keys(DB).sort();
+        if (!ks.length) {
+          alert("Aucune donnée.");
+          return;
+        }
+        let R = [];
+        ks.forEach((k) => {
+          const [a, s] = k.split("-S");
+          R = R.concat(rowsOf(+a, +s));
+        });
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(
+          wb,
+          XLSX.utils.json_to_sheet(R),
+          "Historique",
+        );
+        XLSX.writeFile(wb, "Suivi_prelevements_historique.xlsx");
+        const blob = new Blob([JSON.stringify(DB)], {
+          type: "application/json",
+        });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "sauvegarde_suivi_prelevements.json";
+        a.click();
+      }
+
+      function importJSON(inp) {
+        const f = inp.files[0];
+        if (!f) return;
+        const r = new FileReader();
+        r.onload = (e) => {
+          try {
+            const d = JSON.parse(e.target.result);
+            Object.keys(d).forEach((k) => {
+              DB[k] = Object.assign(DB[k] || {}, d[k]);
+            });
+            persist();
+            listing();
+            alert("Sauvegarde importée.");
+          } catch (err) {
+            alert("Fichier illisible : " + err.message);
+          }
+        };
+        r.readAsText(f);
+        inp.value = "";
+      }
+
+      function wipe() {
+        if (
+          confirm("Effacer définitivement toutes les données enregistrées ?")
+        ) {
+          DB = {};
+          persist();
+          listing();
+          dash();
+        }
+      }
+
+      function listing() {
+        const ks = Object.keys(DB).sort().reverse();
+        const o = document.getElementById("listout");
+        if (!ks.length) {
+          o.innerHTML = '<div class="note">Aucune donnée enregistrée.</div>';
+          return;
+        }
+        let h =
+          '<h2>Semaines enregistrées</h2><div class="tw"><table><thead><tr><th>Semaine</th><th>Formations saisies</th><th>Prélevés</th><th>Envoyés</th><th>En attente</th></tr></thead><tbody>';
+        ks.forEach((k) => {
+          const [a, s] = k.split("-S");
+          const A = agg(+a, +s);
+          h +=
+            "<tr><td>" +
+            k +
+            "</td><td>" +
+            A.fsOnly.length +
+            " / " +
+            (FS.length - 1) +
+            "</td><td>" +
+            A.pre +
+            "</td><td>" +
+            A.env +
+            "</td><td>" +
+            A.att +
+            "</td></tr>";
+        });
+        h += "</tbody></table></div>";
+        o.innerHTML = h;
+      }
+
+      /* ============ NAVIGATION ============ */
+      function tab(n) {
+        [1, 2, 3].forEach((i) => {
+          document.getElementById("p" + i).classList.toggle("on", i === n);
+          document.getElementById("tb" + i).classList.toggle("on", i === n);
+        });
+        if (n === 2) {
+          document.getElementById("dsem").value =
+            document.getElementById("sem").value;
+          document.getElementById("dan").value =
+            document.getElementById("an").value;
+          dash();
+        }
+        if (n === 3) listing();
+      }
+
+      load();
+      verifierLabo();
+      buildRows();
+      fillSelect();
+      STATE = blankState();
+      CUR = MAL.findIndex((m) => !m.lock); if (CUR < 0) CUR = 0;
+      // vue par défaut : guidée sur petit écran, tableau sur grand écran
+      let vuePref = null;
+      try { vuePref = localStorage.getItem("vue_saisie"); } catch (e) {}
+      setView(vuePref || (window.innerWidth < 900 ? "guide" : "table"));
+    </script>
+  </body>
+</html>
